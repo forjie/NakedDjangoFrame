@@ -1,11 +1,3 @@
-"""
-rebuild_db 命令使用方式:
-# 删除 migrations 文件，并重新创建数据库
-python manage.py rebuild_db
-
-# 生成表
-python manage.py rebuild_db --migrations
-"""
 import os
 
 import MySQLdb
@@ -14,12 +6,13 @@ from django.core.management.base import BaseCommand
 
 from stp.envirement import ENVIRONMENT
 from .util import connect
+from comm.argument import apps
 
 
 def find_migrations(base_dir):
     """查找 migrations 文件"""
     for dirpath, dirnames, filenames in os.walk(base_dir):
-        print(dirpath,1,dirnames,2,filenames,3)
+        print(dirpath, 1, dirnames, 2, filenames, 3)
         if not dirpath.endswith('migrations'):
             continue
 
@@ -60,8 +53,8 @@ def add_db(cursor, database_name):
         )
 
 
-def main():
-    for file_name in find_migrations('apps'):
+def main(flag):
+    for file_name in find_migrations(apps):
         os.remove(file_name)
 
     database = settings.DATABASES
@@ -72,10 +65,10 @@ def main():
     port = database['default']['PORT']
 
     cursor = connect(user, password, host, port)
-    del_db(cursor, db)
-    add_db(cursor, db)
-
-    print("rebuild database done!")
+    if not flag:
+        del_db(cursor, db)
+        add_db(cursor, db)
+        print("rebuild database done!")
 
 
 class Command(BaseCommand):
@@ -89,12 +82,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if ENVIRONMENT != 'local' and ENVIRONMENT != 'dev':
-            print('the rebuild_db command only the local environment to use!')
+            print('the rebuild_db commands only the local environment to use!')
             return
+        flag = options.get('migrations')
+        main(flag)
 
-        main()          #执行 删除重建表
-
-        if options['migrations']:   #当参数中有migrations,在直接建表,不删除
+        # 当参数中有migrations,直接建表
+        if flag:
             from django.core.management import execute_from_command_line
             execute_from_command_line(["manage.py", "makemigrations"])
             execute_from_command_line(["manage.py", "migrate"])

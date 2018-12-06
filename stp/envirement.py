@@ -1,8 +1,11 @@
 import os
-os.environ.setdefault('env','local')
+
+from comm.argument import environment
+
+os.environ.setdefault('env', environment)
 ENVIRONMENT = os.environ.get('env')
 
-if ENVIRONMENT not in ['local','dev','prod']:
+if ENVIRONMENT not in ['local', 'dev', 'production']:
     raise Exception('env local/dev/prod  env=local python3 manage.py runserver')
 
 if ENVIRONMENT == 'dev':

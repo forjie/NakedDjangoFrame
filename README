@@ -1,0 +1,68 @@
+英文水平不高,直接上中文
+
+删除重建数据库:
+    python manage.py rebuild_db
+创建表
+    python manage.py rebuild_db --migrations
+
+修改当前运行环境
+    修改 comm/agrument 里面environment对应的值
+
+修改当前所有要执行makemigrations 的所有应用集合的名称
+
+    修改 comm/agrument 里面apps 对应的值
+    实例: 我这里叫apps,所有apps = 'apps'
+
+
+
+一,使用环境选择:
+    1,整个项目根据stp/envirement.py文件中判断用哪个环境
+        os.environ.setdefault('env','local')
+        选择环境的类别,按需求增加或减少
+
+    2,settings文件夹里面是所有的环境类型选择
+        base: 所有环境共有内容
+        development: 开发测试环境
+        local: 本地环境
+        production: 线上环境,如果是线上环境,后期可以把其他的删除
+
+    3,加载选择的环境
+        在manage.py文件中,根据环境的选择加载
+        from stp.envirement import module_settings   #module_settings就是选择的环境
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", module_settings)
+
+二:数据库的迁移:加载python manage.py命令
+    1,层级结构
+        文件夹commands下面所有的文件夹名称不能变化
+        也就是commands/management/commands层级结构和名称不能变化
+
+    2,原理
+
+        -from django.core.management.base import BaseCommand
+        在文件夹python包内,只要在django/core/management下面,都可以用python manager.py 文件名 运行
+        原因是里面有内部Command类
+
+        class Command(BaseCommand):
+            def add_arguments(self, parser):
+                """覆盖基类，命令增加--migrations
+                """
+                parser.add_argument(
+                    '--migrations', action='store_true', dest='migrations',
+                    help="regenerate the migrations file"
+                )
+
+            def handle(self, *args, **options):
+                if ENVIRONMENT != 'local' and ENVIRONMENT != 'dev':
+                    print('the rebuild_db commands only the local environment to use!')
+                    return
+                flag = options.get('migrations')
+                main(flag)
+
+                if flag:  # 当参数中有migrations,直接建表
+                    from django.core.management import execute_from_command_line
+                    execute_from_command_line(["manage.py", "makemigrations"])
+                    execute_from_command_line(["manage.py", "migrate"])
+
+        当写完这个类时,就可以用 python manage.py 文件名 运行程序
+        实例: python manage.py rebuild_db     就能够执行Command内部的handle方法
+
